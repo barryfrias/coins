@@ -37,7 +37,13 @@ final public class ChangeCalculator {
         }
 
         // Find the most efficient change using dynamic programming
-        return findChange(currencyCoins, grandTotal);
+        var result = findChange(currencyCoins, grandTotal);
+
+        if (result.isEmpty()) {
+            throw new IllegalArgumentException("The total " + grandTotal + " cannot be represented in the given currency.");
+        }
+
+        return result;
     }
 
     /**
@@ -48,42 +54,25 @@ final public class ChangeCalculator {
      * @return the list of coins representing the most efficient change
      */
     private static List<Integer> findChange(List<Integer> coins, int total) {
-        final SortedSet<List<Integer>> results = new TreeSet<>(Comparator.comparingInt(List::size));
-
-        coins.stream()
-            .map(i -> coins.subList(0, coins.indexOf(i) + 1)) // Create subsets of coins
-            .map(subsetCoins -> calculateChange(subsetCoins, total)) // Calculate change for each subset
-            .filter(change -> !change.isEmpty()) // Filter out empty change lists
-            .forEach(results::add); // Add non-empty change lists to the results set
-
-        if (results.isEmpty()) {
-            throw new IllegalArgumentException("The total " + total + " cannot be represented in the given currency.");
-        }
-
-        return results.first();
-    }
-
-    /**
-     * Calculates the change for the given total using a subset of currency coins.
-     *
-     * @param coins the list of currency coins to be used
-     * @param total the total amount for which change is to be computed
-     * @return the list of coins representing the change for the given total
-     */
-    private static List<Integer> calculateChange(final List<Integer> coins, final int total) {
         final Map<Integer, List<Integer>> resultsMap = new HashMap<>(total); // results cache
-
+        System.out.println("total=" + total + ", denominations=" + coins);
         // Calculate change for each coin denomination using lambda expressions
         coins.forEach(coin -> {
             for (int j = coin; j <= total; j++) {
-                if (!resultsMap.getOrDefault(j - coin, of()).isEmpty() || j - coin == 0) {
+//                System.out.println("j=" + j + ", coin="+ coin + ", j-coin=" + (j-coin));
+//                System.out.println("current map: " + resultsMap);
+                if (resultsMap.containsKey(j - coin) || j - coin == 0) {
                     final List<Integer> newChange = new ArrayList<>(resultsMap.getOrDefault(j - coin, of()));
+//                    System.out.println("found: " + newChange);
                     newChange.add(coin);
-                    resultsMap.put(j, newChange);
+                    if(!resultsMap.containsKey(j) || resultsMap.get(j).size() > newChange.size()) {
+                        resultsMap.put(j, newChange);
+                    }
+//                   System.out.println("updated map: " + resultsMap);
                 }
             }
         });
 
-        return resultsMap.getOrDefault(total, of()); // Return the list representing the change for the given total
+        return resultsMap.getOrDefault(total, of());
     }
 }
